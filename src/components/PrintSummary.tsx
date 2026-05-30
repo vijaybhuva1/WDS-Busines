@@ -2,6 +2,7 @@ import React from 'react';
 import { WellonikFormData, Competitor, OfferAndPromotion } from '../types';
 import { FORM_STEPS } from '../constants';
 import { Printer, Download, ArrowLeft, CheckCircle2, ChevronRight, Share2, HelpCircle } from 'lucide-react';
+import { generateBusinessProfilePDF } from '../utils/pdfGenerator';
 
 interface PrintSummaryProps {
   formData: WellonikFormData;
@@ -15,7 +16,7 @@ export const PrintSummary: React.FC<PrintSummaryProps> = ({
   onDownloadJSON
 }) => {
   const triggerPrint = () => {
-    window.print();
+    generateBusinessProfilePDF(formData);
   };
 
   // Helper check for empty fields

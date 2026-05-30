@@ -9,6 +9,7 @@ import { WellonikFormData } from './types';
 import { INITIAL_FORM_DATA, FORM_STEPS } from './constants';
 import { OnboardingSteps } from './components/OnboardingSteps';
 import { PrintSummary } from './components/PrintSummary';
+import { generateBusinessProfilePDF } from './utils/pdfGenerator';
 
 export default function App() {
   const [formData, setFormData] = useState<WellonikFormData>(() => {
@@ -280,11 +281,29 @@ export default function App() {
   };
 
   const downloadJSONData = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formData, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href",     dataStr     );
-    dlAnchorElem.setAttribute("download", `wellonik_onboarding_${formData.brandName || 'draft'}.json`);
-    dlAnchorElem.click();
+    try {
+      const jsonString = JSON.stringify(formData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const formattedBrand = (formData.brandName || formData.businessName || 'wellonik')
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .toLowerCase();
+      link.download = `wellonik_onboarding_${formattedBrand}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 200);
+    } catch (e) {
+      console.error('JSON download failed, falling back to legacy data URI:', e);
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(formData, null, 2));
+      const dlAnchorElem = document.createElement('a');
+      dlAnchorElem.setAttribute("href",     dataStr     );
+      dlAnchorElem.setAttribute("download", `wellonik_onboarding_${formData.brandName || 'draft'}.json`);
+      dlAnchorElem.click();
+    }
   };
 
   return (
@@ -417,6 +436,18 @@ export default function App() {
             {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
 
+          {/* Direct PDF Download button */}
+          <button
+            type="button"
+            onClick={() => generateBusinessProfilePDF(formData)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D4A437] hover:bg-[#bfa032] text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95"
+            title="Instant download of all information across all 10 chapters in one PDF"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Download PDF (All Info)</span>
+            <span className="sm:hidden">Download PDF</span>
+          </button>
+
           {/* Download Draft button */}
           <button
             type="button"
@@ -467,7 +498,7 @@ export default function App() {
             />
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start print:hidden">
             
             {/* Sidebar Navigator */}
             <aside className={`lg:col-span-1 border border-slate-200/60 dark:border-slate-850/60 rounded-2xl bg-white/70 dark:bg-slate-900/40 p-4 space-y-4 backdrop-blur-md sticky top-20 select-none ${
@@ -595,6 +626,15 @@ export default function App() {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
+                    type="button"
+                    onClick={() => generateBusinessProfilePDF(formData)}
+                    className="px-3.5 py-1.5 bg-[#D4A437] hover:bg-[#bfa032] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+                    title="Directly trigger full PDF download of all 10 chapters"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF (All Steps)</span>
+                  </button>
+                  <button
                     onClick={() => setViewingReport(true)}
                     className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-950/20 dark:text-slate-300 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
                   >
@@ -653,6 +693,17 @@ export default function App() {
 
             </div>
 
+          </div>
+        )}
+
+        {/* Hidden print-only master summary of all information during active editing */}
+        {!viewingReport && (
+          <div className="hidden print:block">
+            <PrintSummary
+              formData={formData}
+              onBack={() => {}}
+              onDownloadJSON={downloadJSONData}
+            />
           </div>
         )}
 
