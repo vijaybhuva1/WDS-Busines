@@ -1,0 +1,6 @@
+{
+  "name": "Wellonik Client Onboarding Portal",
+  "description": "Premium client onboarding wizard for Wellonik Design Studio to collect detailed business, marketing, target audience, and product requirements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
